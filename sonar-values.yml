@@ -1,0 +1,65 @@
+service:
+  type: ClusterIP
+  externalPort: 80
+  internalPort: 9000
+
+ingress:
+  enabled: true
+  # Used to create an Ingress record.
+  hosts:
+    - name: sonarqube.devopsnetwork.net
+      # Different clouds or configurations might need /* as the default path
+      # path: /
+      # For additional control over serviceName and servicePort
+      # serviceName: someService
+      servicePort: 80
+      # the pathType can be one of the following values: Exact|Prefix|ImplementationSpecific(default)
+      # pathType: ImplementationSpecific
+  annotations:
+    #kubernetes.io/tls-acme: "true"
+    cert-manager.io/cluster-issuer: letsencrypt
+  # This property allows for reports up to a certain size to be uploaded to SonarQube
+    nginx.ingress.kubernetes.io/proxy-body-size: "64m"
+
+  # Set the ingressClassName on the ingress record
+  ingressClassName: nginx
+
+# Additional labels for Ingress manifest file
+  # labels:
+  #  traffic-type: external
+  #  traffic-type: internal
+  tls: 
+  #Secrets must be manually created in the namespace. To generate a self-signed certificate (and private key) and then create the secret in the cluster please refer to official documentation available at https://kubernetes.github.io/ingress-nginx/user-guide/tls/#tls-secrets
+  - secretName: sonar-secret
+    hosts:
+      - "sonarqube.devopsnetwork.net"
+
+persistence:
+  enabled: true
+  ## Set annotations on pvc
+  annotations: {}
+
+  ## Specify an existing volume claim instead of creating a new one.
+  ## When using this option all following options like storageClass, accessMode and size are ignored.
+  # existingClaim:
+
+  ## If defined, storageClassName: <storageClass>
+  ## If set to "-", storageClassName: "", which disables dynamic provisioning
+  ## If undefined (the default) or set to null, no storageClassName spec is
+  ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
+  ##   GKE, AWS & OpenStack)
+  ##
+  storageClass: sonar-sc
+  accessMode: ReadWriteOnce
+  size: 5Gi
+  uid: 1000
+## Configuration values for postgresql dependency
+## ref: https://github.com/bitnami/charts/blob/master/bitnami/postgresql/README.md
+postgresql:
+  # Enable to deploy the bitnami PostgreSQL chart
+  enabled: true
+  persistence:
+    enabled: true
+    accessMode: ReadWriteOnce
+    size: 20Gi
+    storageClass: sonar-sc2
